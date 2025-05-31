@@ -24,7 +24,7 @@ pub struct ConversionResult {
     pub timestamp: String,
 }
 
-async fn fetch_exchange_rates(api_key: &str, base: &str) -> anyhow::Result<ExchangeRates> {
+async fn fetch_exchange_rates(_api_key: &str, base: &str) -> anyhow::Result<ExchangeRates> {
     let client = reqwest::Client::new();
     
     // Try the free API from ExchangeRate-API first (no key required)
@@ -135,27 +135,7 @@ async fn fetch_exchange_rates(api_key: &str, base: &str) -> anyhow::Result<Excha
         }
     }
     
-    // Only try the API key version as a last resort if provided
-    if !api_key.is_empty() {
-        let url = format!("https://api.exchangerate.host/latest?base={}&access_key={}", base, api_key);
-        let response = client.get(&url).send().await;
-        
-        if let Ok(response) = response {
-            if response.status().is_success() {
-                match response.json::<ExchangeRates>().await {
-                    Ok(rates) => {
-                        if rates.success {
-                            println!("Successfully fetched rates from api.exchangerate.host");
-                            return Ok(rates);
-                        }
-                    }
-                    Err(e) => {
-                        println!("Error parsing API response: {}", e);
-                    }
-                }
-            }
-        }
-    }
+    // We no longer need to use the exchangerate.host API since we're using free APIs
     
     // If all APIs fail, return a mock response for demonstration purposes
     // In a real app, you'd want to handle this differently
@@ -245,25 +225,7 @@ async fn convert_currency(
     })
 }
 
-async fn list_currencies(
-    State(state): State<Arc<AppState>>,
-) -> Html<String> {
-    let result = get_currencies(&state.api_key).await;
-    
-    match result {
-        Ok(currencies) => templates::render_currencies_list(currencies),
-        Err(e) => templates::render_error(e.to_string()),
-    }
-}
-
-async fn get_currencies(api_key: &str) -> anyhow::Result<Vec<String>> {
-    let rates = fetch_exchange_rates(api_key, "EUR").await?;
-    
-    let mut currencies: Vec<String> = rates.rates.keys().cloned().collect();
-    currencies.sort();
-    
-    Ok(currencies)
-}
+// Removed unused list_currencies and get_currencies functions
 
 pub fn router(state: Arc<AppState>) -> Router {
     Router::new()

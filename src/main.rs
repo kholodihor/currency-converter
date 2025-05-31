@@ -3,7 +3,7 @@ use clap::{Parser, Subcommand};
 use reqwest::Client;
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::env;
+// Removed unused import: use std::env;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 
@@ -220,32 +220,10 @@ async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
     
     // Load environment variables from .env file if it exists
-    if let Err(e) = dotenv::dotenv() {
-        println!("Note: .env file not found or couldn't be loaded: {}", e);
-        println!("You can create a .env file with EXCHANGERATE_API_KEY=your_key_here
-");
-    }
+    dotenv::dotenv().ok();
     
-    // Get API key from environment variable
-    let api_key = match env::var("EXCHANGERATE_API_KEY") {
-        Ok(key) => key,
-        Err(_) => {
-            println!("Note: EXCHANGERATE_API_KEY environment variable not set.");
-            println!("The application will use free APIs and fallback to mock data if needed.
-");
-            println!("For more reliable results, you can set the API key using one of these methods:
-");
-            println!("1. Create a .env file in the project directory with:
-   EXCHANGERATE_API_KEY=your_api_key_here
-");
-            println!("2. Set the environment variable before running:
-   export EXCHANGERATE_API_KEY=your_api_key_here
-");
-            println!("You can get a free API key from https://exchangerate.host
-");
-            "".to_string() // Return empty string instead of exiting
-        }
-    };
+    // We don't need an API key since we're using free APIs
+    let api_key = "".to_string();
     
     let cli = Cli::parse();
     

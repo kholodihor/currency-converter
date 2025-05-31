@@ -62,15 +62,7 @@ pub fn render_conversion_result(result: ConversionResult) -> Html<String> {
     render_template("conversion_result.html", &replacements)
 }
 
-pub fn render_currencies_list(currencies: Vec<String>) -> Html<String> {
-    let currencies_json = serde_json::to_string(&currencies).unwrap_or_default();
-    
-    let replacements = vec![
-        ("currencies_json".to_string(), currencies_json),
-    ];
-    
-    render_template("currencies_list.html", &replacements)
-}
+// Removed unused render_currencies_list function
 
 pub fn render_error(message: String) -> Html<String> {
     let replacements = vec![
