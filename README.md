@@ -1,47 +1,63 @@
 # Currency Converter
 
-A Rust application that provides both CLI and web interfaces for currency conversion. It fetches real-time exchange rates from exchangerate.host API and allows you to convert between different currencies.
+A modern Rust application that provides both CLI and web interfaces for currency conversion. It fetches real-time exchange rates from multiple free APIs with fallback mechanisms and allows you to convert between different currencies.
+
+## Technical Stack
+
+- **Backend**: Rust with Axum web framework
+- **Frontend**: HTMX and Tailwind CSS (dark theme with purple accents)
+- **Async Runtime**: Tokio
+- **Error Handling**: Anyhow
+- **CLI Interface**: Clap
+- **HTTP Client**: Reqwest
+- **Serialization**: Serde
 
 ## Features
 
-- List available currencies
-- Convert amounts between different currencies
-- Uses real-time exchange rates from exchangerate.host API
+- **Multiple Currency Support**: Includes major currencies like USD, EUR, GBP, JPY, and additional currencies like PLN and UAH
+- **Free API Integration**: Uses multiple free currency exchange APIs with fallback mechanisms:
+  - Open Exchange Rates API (open.er-api.com)
+  - Frankfurter API (api.frankfurter.app)
+  - Fawaz Ahmed's Currency API (cdn.jsdelivr.net/gh/fawazahmed0/currency-api)
+  - Mock data fallback if all APIs fail
+- **No API Key Required**: Works without any API keys
+- **Clean Output**: Formatted results without curly braces
+- **Responsive UI**: Dark theme with purple accents
+- **CLI and Web Interfaces**: Use as a command-line tool or web application
+
+## Architecture
+
+- **Modular Design**: Separation between CLI and web interfaces
+- **Template Rendering**: Custom template system for HTML generation
+- **Error Handling**: Comprehensive error handling with fallbacks
+- **Asynchronous Processing**: Non-blocking API requests
+- **Minimal JavaScript**: Uses HTMX for interactivity without heavy client-side JS
 
 ## Prerequisites
 
 - Rust and Cargo installed
-- An API key from [exchangerate.host](https://exchangerate.host)
 
 ## Setup
 
 1. Clone this repository
-2. Add your API key to the `.env` file:
-   ```
-   EXCHANGERATE_API_KEY=your_api_key_here
-   ```
-3. Build the project:
+2. Build the project:
    ```
    cargo build --release
    ```
 
-## Usage
 
-### List available currencies
 
-```
-./target/release/currency-converter list
-```
+## Development
 
-### Convert currency
+```bash
+# Run in development mode
+cargo run -- web
 
-```
-./target/release/currency-converter convert <AMOUNT> <FROM> <TO>
-```
+# Run tests
+cargo test
 
-Example:
-```
-./target/release/currency-converter convert 100 USD EUR
+# Build for production
+cargo build --release
 ```
 
 ## License
