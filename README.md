@@ -20,8 +20,6 @@ A modern Rust application that provides both CLI and web interfaces for currency
   - Frankfurter API (api.frankfurter.app)
   - Fawaz Ahmed's Currency API (cdn.jsdelivr.net/gh/fawazahmed0/currency-api)
   - Mock data fallback if all APIs fail
-- **No API Key Required**: Works without any API keys
-- **Clean Output**: Formatted results without curly braces
 - **Responsive UI**: Dark theme with purple accents
 - **CLI and Web Interfaces**: Use as a command-line tool or web application
 
