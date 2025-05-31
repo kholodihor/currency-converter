@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -38,16 +39,29 @@
             -webkit-animation: spinner 1.5s linear infinite;
             animation: spinner 1.5s linear infinite;
         }
+
         @-webkit-keyframes spinner {
-            0% { -webkit-transform: rotate(0deg); }
-            100% { -webkit-transform: rotate(360deg); }
+            0% {
+                -webkit-transform: rotate(0deg);
+            }
+
+            100% {
+                -webkit-transform: rotate(360deg);
+            }
         }
+
         @keyframes spinner {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
     </style>
 </head>
+
 <body class="bg-gray-900 min-h-screen text-gray-100">
     <div class="container mx-auto px-4 py-8">
         <header class="mb-10 text-center">
@@ -62,7 +76,7 @@
                     <input type="number" id="amount" name="amount" step="0.01" min="0.01" value="1.00" required
                         class="w-full px-4 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
                 </div>
-                
+
                 <div class="grid grid-cols-2 gap-4 mb-6">
                     <div>
                         <label for="from" class="block text-gray-200 font-medium mb-2">From</label>
@@ -98,7 +112,7 @@
                     </div>
                 </div>
 
-                <button type="submit" 
+                <button type="submit"
                     class="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition duration-200">
                     Convert
                 </button>
@@ -112,26 +126,7 @@
                 <!-- Conversion results will appear here -->
             </div>
         </div>
-
-        <div class="mt-8 text-center">
-            <button hx-get="/currencies" hx-target="#currencies-list" hx-trigger="click" hx-indicator="#currencies-loader"
-                class="bg-gray-700 hover:bg-gray-600 text-gray-200 font-medium py-2 px-4 rounded-lg transition duration-200 border border-gray-600">
-                Show Available Currencies
-            </button>
-            
-            <div id="currencies-loader" class="loader-container hidden text-center py-4">
-                <div class="loader mx-auto h-8 w-8 rounded-full border-4 border-gray-600"></div>
-            </div>
-            
-            <div id="currencies-list" class="mt-4 max-h-60 overflow-y-auto">
-                <!-- Currency list will appear here -->
-            </div>
-        </div>
-
-        <footer class="mt-12 text-center text-gray-400 text-sm">
-            <p>Powered by <a href="https://exchangerate.host" class="text-purple-400 hover:underline" target="_blank">exchangerate.host</a> API</p>
-            <p class="mt-1">Built with Rust, Axum, HTMX, and Tailwind CSS</p>
-        </footer>
     </div>
 </body>
+
 </html>

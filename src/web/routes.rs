@@ -25,91 +25,133 @@ pub struct ConversionResult {
 }
 
 async fn fetch_exchange_rates(api_key: &str, base: &str) -> anyhow::Result<ExchangeRates> {
-    // Try multiple API endpoints in order of reliability
     let client = reqwest::Client::new();
     
-    // First try the free API that doesn't require an API key
+    // Try the free API from ExchangeRate-API first (no key required)
     let free_url = format!("https://open.er-api.com/v6/latest/{}", base);
     let free_response = client.get(&free_url).send().await;
     
-    if let Ok(resp) = free_response {
-        if resp.status().is_success() {
-            // Try to parse the response
-            match resp.json::<ExchangeRates>().await {
-                Ok(rates) => {
-                    return Ok(rates);
-                }
-                Err(e) => {
-                    println!("Error parsing free API response: {}", e);
-                    // Continue to next API if parsing fails
-                }
-            }
-        }
-    }
-    
-    // Try another free API as backup
-    let backup_url = format!("https://cdn.jsdelivr.net/gh/fawazahmed0/currency-api@1/latest/currencies/{}/eur.json", base.to_lowercase());
-    let backup_response = client.get(&backup_url).send().await;
-    
-    if let Ok(resp) = backup_response {
-        if resp.status().is_success() {
-            // This API has a different format, so we need to convert it
-            let text = resp.text().await?;
-            println!("Backup API response: {}", text);
-            
-            // Create a custom ExchangeRates from this response
-            // This is a simplified conversion - in a real app, you'd parse the JSON properly
-            return Ok(ExchangeRates {
-                success: true,
-                timestamp: Some(SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()),
-                base: Some(base.to_string()),
-                date: Some(chrono::Utc::now().format("%Y-%m-%d").to_string()),
-                rates: HashMap::new(), // We'd fill this from the response in a real app
-            });
-        }
-    }
-    
-    // If we have an API key, try the original endpoints
-    if !api_key.is_empty() {
-        // Try the primary API endpoint
-        let primary_url = format!(
-            "https://api.exchangerate.host/latest?access_key={}&base={}",
-            api_key, base
-        );
-        
-        let response = match client.get(&primary_url).send().await {
-            Ok(resp) => {
-                if resp.status().is_success() {
-                    resp
-                } else {
-                    // Try fallback API if primary fails
-                    let fallback_url = format!(
-                        "https://api.exchangeratesapi.io/latest?access_key={}&base={}",
-                        api_key, base
-                    );
-                    client.get(&fallback_url).send().await?
-                }
-            },
-            Err(_) => {
-                // Try fallback API if primary fails
-                let fallback_url = format!(
-                    "https://api.exchangeratesapi.io/latest?access_key={}&base={}",
-                    api_key, base
-                );
-                client.get(&fallback_url).send().await?
-            }
-        };
-        
+    if let Ok(response) = free_response {
         if response.status().is_success() {
+            // The free API has a different response format, so we need to parse it differently
+            let response_text = response.text().await.unwrap_or_default();
+            
             // Try to parse the response
-            match response.json::<ExchangeRates>().await {
-                Ok(rates) => {
-                    if rates.success {
-                        return Ok(rates);
+            if let Ok(value) = serde_json::from_str::<serde_json::Value>(&response_text) {
+                if let Some(rates_obj) = value.get("rates") {
+                    if let Some(rates_map) = rates_obj.as_object() {
+                        let mut rates = HashMap::new();
+                        
+                        for (currency, rate) in rates_map {
+                            if let Some(rate_val) = rate.as_f64() {
+                                rates.insert(currency.clone(), rate_val);
+                            }
+                        }
+                        
+                        println!("Successfully fetched rates from open.er-api.com");
+                        return Ok(ExchangeRates {
+                            success: true,
+                            timestamp: value.get("time_last_update_unix").and_then(|v| v.as_u64()),
+                            base: Some(base.to_string()),
+                            date: value.get("time_last_update_utc").and_then(|v| v.as_str()).map(|s| s.to_string()),
+                            rates,
+                        });
                     }
                 }
-                Err(e) => {
-                    println!("Error parsing API response: {}", e);
+            } else {
+                println!("Error parsing free API response: {}", anyhow::anyhow!("Invalid JSON"));
+            }
+        }
+    }
+    
+    // Try another free API from fawazahmed0/currency-api (GitHub)
+    let fallback_url = format!("https://cdn.jsdelivr.net/gh/fawazahmed0/currency-api@1/latest/currencies/{}.json", base.to_lowercase());
+    let fallback_response = client.get(&fallback_url).send().await;
+    
+    if let Ok(response) = fallback_response {
+        if response.status().is_success() {
+            // This API has yet another format
+            let response_text = response.text().await.unwrap_or_default();
+            
+            if let Ok(value) = serde_json::from_str::<serde_json::Value>(&response_text) {
+                if let Some(rates_obj) = value.get(base.to_lowercase()) {
+                    if let Some(rates_map) = rates_obj.as_object() {
+                        let mut rates = HashMap::new();
+                        
+                        for (currency, rate) in rates_map {
+                            if let Some(rate_val) = rate.as_f64() {
+                                rates.insert(currency.to_uppercase(), rate_val);
+                            }
+                        }
+                        
+                        println!("Successfully fetched rates from fawazahmed0/currency-api");
+                        return Ok(ExchangeRates {
+                            success: true,
+                            timestamp: Some(SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()),
+                            base: Some(base.to_string()),
+                            date: Some(chrono::Utc::now().format("%Y-%m-%d").to_string()),
+                            rates,
+                        });
+                    }
+                }
+            } else {
+                println!("Error parsing API response: {}", anyhow::anyhow!("Invalid JSON"));
+            }
+        }
+    }
+    
+    // Try the Frankfurter API (another free option)
+    let frankfurter_url = format!("https://api.frankfurter.app/latest?from={}", base);
+    let frankfurter_response = client.get(&frankfurter_url).send().await;
+    
+    if let Ok(response) = frankfurter_response {
+        if response.status().is_success() {
+            let response_text = response.text().await.unwrap_or_default();
+            
+            if let Ok(value) = serde_json::from_str::<serde_json::Value>(&response_text) {
+                if let Some(rates_obj) = value.get("rates") {
+                    if let Some(rates_map) = rates_obj.as_object() {
+                        let mut rates = HashMap::new();
+                        
+                        for (currency, rate) in rates_map {
+                            if let Some(rate_val) = rate.as_f64() {
+                                rates.insert(currency.clone(), rate_val);
+                            }
+                        }
+                        
+                        println!("Successfully fetched rates from api.frankfurter.app");
+                        return Ok(ExchangeRates {
+                            success: true,
+                            timestamp: Some(SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()),
+                            base: Some(base.to_string()),
+                            date: value.get("date").and_then(|v| v.as_str()).map(|s| s.to_string()),
+                            rates,
+                        });
+                    }
+                }
+            } else {
+                println!("Error parsing Frankfurter API response: {}", anyhow::anyhow!("Invalid JSON"));
+            }
+        }
+    }
+    
+    // Only try the API key version as a last resort if provided
+    if !api_key.is_empty() {
+        let url = format!("https://api.exchangerate.host/latest?base={}&access_key={}", base, api_key);
+        let response = client.get(&url).send().await;
+        
+        if let Ok(response) = response {
+            if response.status().is_success() {
+                match response.json::<ExchangeRates>().await {
+                    Ok(rates) => {
+                        if rates.success {
+                            println!("Successfully fetched rates from api.exchangerate.host");
+                            return Ok(rates);
+                        }
+                    }
+                    Err(e) => {
+                        println!("Error parsing API response: {}", e);
+                    }
                 }
             }
         }
@@ -227,6 +269,6 @@ pub fn router(state: Arc<AppState>) -> Router {
     Router::new()
         .route("/", get(index))
         .route("/convert", post(convert))
-        .route("/currencies", get(list_currencies))
+        // Removed the '/currencies' route as we no longer need it
         .with_state(state)
 }
